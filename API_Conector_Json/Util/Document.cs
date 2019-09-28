@@ -130,11 +130,12 @@ namespace TCC.Util
             {
 
                 //string responseFromServer = File.ReadAllText("C:\\Users\\Rodrigo\\Desktop\\entrada.json");
-                string responseFromServer = "";
-                if(!FazRequisicao(ref mensagemErro, ref responseFromServer))
-                {
-                    return false;
-                }
+                string responseFromServer = this.requisicao;
+                
+                //if(!FazRequisicao(ref mensagemErro, ref responseFromServer))
+                //{
+                //    return false;
+                //}
 
                 Save(responseFromServer, ref mensagemErro);
             }
@@ -248,26 +249,21 @@ namespace TCC.Util
         public void MontaDados(string responseFromServer, ref List<string> colunas, ref List<string> dados)
         {
             colunas = new List<string>();
-            JObject response = JsonConvert.DeserializeObject<JObject>(responseFromServer);
 
-            foreach (JToken o in response.PropertyValues())
+            List<JObject> response = JsonConvert.DeserializeObject<List<JObject>>(responseFromServer);
+
+            foreach (dynamic en in response)
             {
-                if(o.Type == JTokenType.Array || o.Type == JTokenType.Object)
+                foreach (JToken o in en.PropertyValues())
                 {
-                    foreach(JToken t in o.Values())
+                    if (!colunas.Contains(o.Path.ToString().Replace(":", "").Replace(";", "").Replace(".", "").Replace(",", "")))
                     {
-                        colunas.Add(t.Path.ToString().Replace(".","_"));
-                        dados.Add(t.ToString());
+                        colunas.Add(o.Path.ToString().Replace(":", "").Replace(";","").Replace(".","").Replace(",",""));
                     }
+                    dados.Add(o.ToString());
                 }
-                else
-                    if (!colunas.Contains(o.Path.ToString()))
-                    {
-                        colunas.Add(o.Path.ToString());
-                        dados.Add(o.ToString());
-                    }
+                response = null;
             }
-            response = null;
         }
 
         /// <summary>
@@ -299,12 +295,20 @@ namespace TCC.Util
 
                 texto += "\n";
                 first = true;
+                int i = 0;
                 foreach (string dado in dados)
                 {
+                    i++;
                     if (first)
                         texto += dado.Replace("\t", "").Replace("\n", "");
                     else
                         texto += ";" + dado.Replace("\t", "").Replace("\n", "");
+
+                    if (i == colunas.Count)
+                    {
+                        texto += "\n";
+                    }
+
                     first = false;
                 }
 
@@ -341,11 +345,22 @@ namespace TCC.Util
                 string texto = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?>\n";
                 texto +=       "<json>\n";
                 
-                for(int i = 0; i < colunas.Count; i++)
+                for(int i = 0, j = 0; i < dados.Count; i++)
                 {
-                    texto +=    "\t\t<" + col[i].Replace("\t", "").Replace("\n", "") + ">" + 
+                    if (j == 0)
+                    {
+                        texto += "\t<tweet>\n";
+                    }
+
+                    texto +=    "\t\t<" + col[j].Replace("\t", "").Replace("\n", "") + ">" + 
                                 inf[i].Replace("\t", "").Replace("\n", "") +
-                                "</" + col[i].Replace("\t", "").Replace("\n", "") + ">\n";
+                                "</" + col[j].Replace("\t", "").Replace("\n", "") + ">\n";
+                    j++;
+                    if (j == colunas.Count)
+                    {
+                        texto += "\t</tweet>\n";
+                        j = 0;
+                    }
                 }
 
                 texto +=       "</json>";
@@ -403,14 +418,37 @@ namespace TCC.Util
                 string[] inf = new string[dados.Count];
                 col = colunas.ToArray();
                 inf = dados.ToArray();
+                string comando = "INSERT INTO RETORNO (";
+                string values = "VALUES (";
 
-                for(int i = 0;i < colunas.Count; i++)
+                for (int i = 0;i < colunas.Count; i++)
                 {
                     MD_Retorno retorno = new MD_Retorno(col[i], false);
-                    retorno.Value = inf[i];
-                    retorno.Insert();
+                    comando += (i == 0 ? "CODIGO, " + retorno.Path : ", " + retorno.Path);
+                    values += (i == 0 ? retorno.Inc() + ", '" + inf[0] + "'" : ",'" + inf[i].Replace("'", "") + "'");
                     retorno = null;
                 }
+                comando += ")";
+                values += ")";
+                Util.DataBase.Insert(comando + values);
+                values = "VALUES (";
+
+                for (int j = colunas.Count, i = 0; j < dados.Count; j++)
+                {
+                    MD_Retorno retorno = new MD_Retorno(col[i], false);
+                    values += (i == 0 ? retorno.Inc() + ", '" + inf[j] + "'" : ",'" + inf[j].Replace("'", "") + "'");
+
+                    i++;
+                    if (i == colunas.Count)
+                    {
+                        values += ")";
+                        Util.DataBase.Insert(comando + values);
+                        values = "VALUES (";
+                        i = 0;
+                    }
+                }
+
+                Util.DataBase.Execute("DROP TABLE INCREMENTAIS");
             }
             catch (Exception e)
             {

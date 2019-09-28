@@ -17,6 +17,9 @@ namespace API_Conector_Json
         static void Main(string[] args)
         {
             CL_Files.CreateMainDirectories();
+            string command = "";
+            string saida = "";
+#if !Debug
             if (args.Length < 4)
             {
                 CL_Files.WriteOnTheLog("There are no suficient arguments", Global.TipoLog.SIMPLES);
@@ -25,7 +28,7 @@ namespace API_Conector_Json
                 return;
             }
 
-            string command = "", saida = "";
+            
             if (!CarregaParametros(args, ref command, ref saida))
             {
                 Console.WriteLine("Erro ao carregar os parâmetros. Log:" + Global.app_logs_directoty);
@@ -33,6 +36,9 @@ namespace API_Conector_Json
                 TCC.Util.CL_Files.WriteOnTheLog("Erro ao carregar os parâmetros.", Global.TipoLog.SIMPLES);
                 return;
             }
+#else
+            CarregaComando("C:\\Users\\rodri\\OneDrive\\Área de Trabalho\\TCC\\python\\teste.json", ref command);
+#endif
 
             DataBase.OpenConnection();
             Document document = new Document(command, true, true, true, true);
@@ -111,16 +117,20 @@ namespace API_Conector_Json
         {
             try
             {
+                if (string.IsNullOrEmpty(saida))
+                {
+                    return;
+                }
 
                 if (!Directory.Exists(saida))
                 {
                     Directory.CreateDirectory(saida);
                 }
 
-                File.Copy(Global.app_base_file, saida + "//saida.db3");
-                File.Copy(Global.app_out_file_csv, saida + "//saida.csv");
-                File.Copy(Global.app_out_file_json, saida + "//saida.json");
-                File.Copy(Global.app_out_file_xml, saida + "//saida.xml");
+                File.Copy(Global.app_base_file, saida +  "\\saida.db3");
+                File.Copy(Global.app_out_file_csv, saida + "\\saida.csv");
+                File.Copy(Global.app_out_file_json, saida + "\\saida.json");
+                File.Copy(Global.app_out_file_xml, saida + "\\saida.xml");
             }
             catch (Exception e)
             {
