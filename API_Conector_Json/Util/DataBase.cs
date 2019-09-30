@@ -16,11 +16,6 @@ namespace TCC.Util
         private static bool is_open = false;
 
         /// <summary>
-        /// Checker if the transaction is opened
-        /// </summary>
-        private static bool is_in_transaction = false;
-
-        /// <summary>
         /// Class of the connection with the data_base
         /// </summary>
         private static SQLiteConnection m_dbConnection;

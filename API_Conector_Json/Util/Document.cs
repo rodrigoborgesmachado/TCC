@@ -11,6 +11,22 @@ namespace TCC.Util
 {
     public class Document
     {
+        #region Structures
+
+        /// <summary>
+        /// Strutura que define os arquivos de saída
+        /// </summary>
+        public class Saida
+        {
+            public bool sqlite = false;
+            public bool csv = false;
+            public bool json = false;
+            public bool xml = false;
+        }
+
+
+        #endregion Structures
+
         #region Atributos e Propriedades
 
         string requisicao = "";
@@ -89,6 +105,11 @@ namespace TCC.Util
             }
         }
 
+        /// <summary>
+        /// Tipos de arquivo de saída
+        /// </summary>
+        Saida out_files = new Saida();
+
         #endregion Atributos e Propriedades
 
         #region Construtores
@@ -106,13 +127,15 @@ namespace TCC.Util
         /// Construtor principal da classe
         /// </summary>
         /// <param name="requisicao">Comando de requisição a ser feita</param>
-        public Document(string requisicao, bool save_result_as_xml, bool save_result_as_csv, bool save_result_as_json, bool save_result_on_dataBase)
+        public Document(string requisicao, Document.Saida out_files)
         {
+            CL_Files.WriteOnTheLog("Document.Document", Global.TipoLog.DETALHADO);
             this.requisicao = requisicao;
-            save_as_xml = save_result_as_xml;
-            save_as_json = save_result_as_json;
-            save_as_csv = save_result_as_csv;
-            save_on_bd = save_result_on_dataBase;
+            this.out_files = out_files;
+            Save_as_csv = out_files.csv;
+            Save_as_json = out_files.json;
+            Save_as_xml = out_files.xml;
+            Save_on_bd = out_files.sqlite;
         }
 
         #endregion Construtores
@@ -125,6 +148,8 @@ namespace TCC.Util
         /// <returns></returns>
         public bool Criar(ref string mensagemErro)
         {
+            CL_Files.WriteOnTheLog("Document.Criar", Global.TipoLog.DETALHADO);
+
             mensagemErro = "";
             try
             {
@@ -156,6 +181,8 @@ namespace TCC.Util
         /// <returns></returns>
         private bool FazRequisicao(ref string mensagemErro, ref string retorno)
         {
+            CL_Files.WriteOnTheLog("Document.FazRequisicao", Global.TipoLog.DETALHADO);
+
             mensagemErro = retorno = "";
 
             try
@@ -196,6 +223,8 @@ namespace TCC.Util
         /// <returns></returns>
         private bool Save(string responseFromServer, ref string mensagemErro)
         {
+            CL_Files.WriteOnTheLog("Document.Save", Global.TipoLog.DETALHADO);
+
             mensagemErro = "";
             List<string> colunas = new List<string>();
             List<string> dados = new List<string>();
@@ -205,13 +234,15 @@ namespace TCC.Util
             {
                 if (Save_as_csv)
                 {
-                    if(!SaveResultAsCsv(colunas, dados, ref mensagemErro))
+                    CL_Files.WriteOnTheLog("Arquivos de saída" + Global.app_out_file_csv, Global.TipoLog.SIMPLES);
+                    if (!SaveResultAsCsv(colunas, dados, ref mensagemErro))
                     {
                         return false;
                     }
                 }
                 if (Save_as_xml)
                 {
+                    CL_Files.WriteOnTheLog("Arquivos de saída" + Global.app_out_file_xml, Global.TipoLog.SIMPLES);
                     if (!SaveResultAsXML(colunas, dados, ref mensagemErro))
                     {
                         return false;
@@ -219,6 +250,7 @@ namespace TCC.Util
                 }
                 if (Save_as_json)
                 {
+                    CL_Files.WriteOnTheLog("Arquivos de saída" + Global.app_out_file_json, Global.TipoLog.SIMPLES);
                     if (!SaveResultAsJSON(responseFromServer, ref mensagemErro))
                     {
                         return false;
@@ -226,6 +258,7 @@ namespace TCC.Util
                 }
                 if (Save_on_bd)
                 {
+                    CL_Files.WriteOnTheLog("Arquivos de saída" + Global.app_base_file, Global.TipoLog.SIMPLES);
                     if (!SaveResultOnBD(colunas, dados, ref mensagemErro))
                     {
                         return false;
@@ -248,6 +281,8 @@ namespace TCC.Util
         /// <param name="dados">Dados referente ao JSON</param>
         public void MontaDados(string responseFromServer, ref List<string> colunas, ref List<string> dados)
         {
+            CL_Files.WriteOnTheLog("Document.MontaDados", Global.TipoLog.DETALHADO);
+
             colunas = new List<string>();
 
             List<JObject> response = JsonConvert.DeserializeObject<List<JObject>>(responseFromServer);
@@ -275,6 +310,8 @@ namespace TCC.Util
         /// <returns>True - sucesso; False - erro</returns>
         public bool SaveResultAsCsv(List<string> colunas,List<string> dados, ref string mensagemErro)
         {
+            CL_Files.WriteOnTheLog("Document.SaveResultAsCsv", Global.TipoLog.DETALHADO);
+
             mensagemErro = "";
 
             try
@@ -331,6 +368,7 @@ namespace TCC.Util
         /// <returns>True - sucesso; False - erro</returns>
         public bool SaveResultAsXML(List<string> colunas, List<string> dados, ref string mensagemErro)
         {
+            CL_Files.WriteOnTheLog("Document.SaveResultAsXML", Global.TipoLog.DETALHADO);
             mensagemErro = "";
             string[] col = new string[colunas.Count];
             string[] inf = new string[dados.Count];
@@ -383,6 +421,8 @@ namespace TCC.Util
         /// <returns>True - sucesso; False - erro</returns>
         public bool SaveResultAsJSON(string response, ref string mensagemErro)
         {
+            CL_Files.WriteOnTheLog("Document.SaveResultAsJSON", Global.TipoLog.DETALHADO);
+
             mensagemErro = "";
 
             try
@@ -408,6 +448,8 @@ namespace TCC.Util
         /// <returns>True - sucesso; False - erro</returns>
         public bool SaveResultOnBD(List<string> colunas, List<string> dados, ref string mensagemErro)
         {
+            CL_Files.WriteOnTheLog("Document.SaveResultOnBD", Global.TipoLog.DETALHADO);
+
             mensagemErro = "";
             ///Drop e cria a tabela
             MD_Retorno r = new MD_Retorno(true);
@@ -420,6 +462,9 @@ namespace TCC.Util
                 inf = dados.ToArray();
                 string comando = "INSERT INTO RETORNO (";
                 string values = "VALUES (";
+
+                Util.DataBase.Execute("DROP TABLE RETORNO");
+                Util.DataBase.Execute("DROP TABLE INCREMENTAIS");
 
                 for (int i = 0;i < colunas.Count; i++)
                 {
